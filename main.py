@@ -1,57 +1,90 @@
-import numpy as np
+
 import random, pygame, math
-from Body import Body
+
 
 
 WIDTH, HEIGHT = 1920, 1080
 window_size = (WIDTH, HEIGHT)
 screen = pygame.display.set_mode(window_size)
+surface = pygame.Surface(window_size)
+surface.fill("Black")
+surface_screen = surface.get_rect(center=(1920 // 2, 1080 // 2))
 
-n = 10
-
-positions = np.zeros((n, n))
-velocities = np.zeros((n, n))
-masses = np.zeros(n)
-acceleration = np.zeros((n, n))
-
-for i in range(n):
-        x = random.randint(0, 1920)
-        y = random.randint(0, 1080)
-        m = random.randint(1 * 10E5, 10 * 10E5)
-        positions[i, 0] = x
-        positions[i, 1] = y
-        masses[i] = m
+class Body(pygame.sprite.Sprite):
+    
+    def __init__(self, mass, radius, x_velocity, y_velocity, start_position):
         
-def n_bodies(n):
+        """Create a body with a mass, an acceleration depending on the x and y axis, a velocity depending on the x and y axis
+        and a position depending on the x and y """
+        
+        self.radius = 1
+        self.image = pygame.Surface((radius, radius))
+        self.image.fill("Black")
+        self.rect = self.image.get_rect(center= start_position)
+        pygame.draw.circle(self.image, (255, 255, 255), (radius, radius), radius= radius)
+        
+        self.mass = mass
+        self.x_acceleration = 0
+        self.y_acceleration = 0
+        self.x_velocity = x_velocity
+        self.y_velocity = y_velocity
+        self.x_position = start_position[0]
+        self.y_position = start_position[1]
+        
+    #Method to change acceleration depending on the axis 
     
-    delta_time = 0.01
-    G = 6.67 * 10E-11
+    def set_x_acceleration(self, x_acceleration):
+        self.x_acceleration = x_acceleration
+        
+    def set_y_acceleration(self, y_acceleration):
+        self.y_acceleration = y_acceleration
     
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                distance = np.linalg.norm(positions[j] - positions[i])
-                acceleration[i] += masses[j] / distance ** 3
-            velocities[i] += acceleration[i] * delta_time
-            positions[i] += velocities[i] * delta_time
-            
-            #Making sure that the bodies aren't going out of the screen
-            
-            positions[positions < 0] = 0
-            positions[positions > WIDTH] = WIDTH
-            positions[:, 1][positions[:, 1] < 0] = 0
-            positions[:, 1][positions[:, 1] > HEIGHT] = HEIGHT
-            
-    return positions
-
-def draw_bodies():
+    #Method to change velocity depending on the axis 
     
-    screen.fill(color=(0,0,0))
+    def set_x_velocity(self, x_velocity):
+        self.x_velocity = x_velocity
+        
+    def set_y_velocity(self, y_velocity):
+        self.y_velocity = y_velocity
+        
+    #Method to change position depending on the axis 
+     
+    def set_x_position(self, x_position):
+        self.x_position = x_position
     
-    for i in range(n):
-        x = positions[i, 0]
-        y = positions[i, 1]
-        pygame.draw.circle(screen, (255, 255, 255), (int(x), int(y)), 1)
+    def set_x_position(self, x_position):
+        self.x_position = x_position
+        
+    def change_x_velocity(self, value):
+        self.x_velocity += value
+    
+    def change_y_velocity(self, value):
+        self.y_velocity += value
+        
+    def change_x_position(self, value):
+        self.x_position += value
+        
+    def change_y_position(self, value):
+        self.y_position += value
+        
+    def update_position(self):
+        self.rect.center = (round(self.x_position), round(self.y_position))
+      
+    def update_all(self):
+        
+       self.change_x_velocity(self.x_acceleration)
+       self.change_y_velocity(self.y_acceleration)
+       self.change_x_position(self.change_x_velocity)
+       self.change_y_position(self.y_velocity)
+       
+       self.update_position()
+        
+    def gravitation_interaction(self, other : Body):
+        
+        GRAVITATIONAL_CONSTANT = 6.67 * 10E-11
+        DELTA_TIME = 0.1
+    
+        
  
 def main():
     
@@ -59,12 +92,7 @@ def main():
     pygame.init()
     
     while run:
-        
-        draw_bodies()
-        n_bodies(n)
-
         for event in pygame.event.get():
-            
             if event.type == pygame.QUIT:
                 run = False
         pygame.display.update()
