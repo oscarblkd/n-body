@@ -1,5 +1,5 @@
 import random, pygame, math, itertools
-
+from numba import *
 
 
 WIDTH, HEIGHT = 1920, 1080
@@ -8,6 +8,7 @@ screen = pygame.display.set_mode(window_size)
 surface = pygame.Surface(window_size)
 surface.fill("Black")
 surface_screen = surface.get_rect(center=(1920 // 2, 1080 // 2))
+DELTA_TIME = 0.2
 
 class Body(pygame.sprite.Sprite):
     
@@ -71,27 +72,34 @@ class Body(pygame.sprite.Sprite):
         
     def update_position(self):
         
-        if self.x_position < 0:
-            self.change_x_position(0)
-        elif self.x_position > WIDTH:
-            self.change_x_position(WIDTH)
-            
-        if self.y_position < 0:
-            self.change_y_position(0)
-        elif self.y_position > HEIGHT:
-            self.change_y_position(HEIGHT)
+        if self.color != (255, 255, 255):
+            pass
         
-        self.rect.center = (round(self.x_position), round(self.y_position))
+        else:
+            if self.x_position <= 0:
+                self.change_x_position(0)
+                
+            elif self.x_position >= WIDTH:
+                self.change_x_position(WIDTH)
+                
+            if self.y_position <= 0:
+                self.change_y_position(0)
+                
+            elif self.y_position >= HEIGHT:
+                self.change_y_position(HEIGHT)
+        
+            self.rect.center = (round(self.x_position), round(self.y_position))
       
     def update_all(self):
         
-       self.change_x_velocity(self.x_acceleration)
-       self.change_y_velocity(self.y_acceleration)
-       self.change_x_position(self.x_velocity)
-       self.change_y_position(self.y_velocity)
+       self.change_x_velocity(self.x_acceleration * DELTA_TIME)
+       self.change_y_velocity(self.y_acceleration * DELTA_TIME)
+       self.change_x_position(self.x_velocity * DELTA_TIME)
+       self.change_y_position(self.y_velocity * DELTA_TIME)
+       print(self.x_acceleration, self.y_acceleration)
        
        self.update_position()
-        
+       
     def gravitation_interaction(self, other):
         
         """Change the acceleration of self when there's a gravitational interaction with another body"""
@@ -110,12 +118,12 @@ class Body(pygame.sprite.Sprite):
                 theta = math.asin(distance_y / r)
                 a = GRAVITATIONAL_CONSTANT * other.mass / r ** 2
 
-                if self.x_position > other.x_position:
+                if self.x_position >= other.x_position:
                     self.set_x_acceleration(a * -math.cos(theta))
                 else:
                     self.set_x_acceleration(a * math.cos(theta))
                 
-                if self.y_position > other.y_position:
+                if self.y_position >= other.y_position:
                     self.set_y_acceleration(a * -math.sin(theta))
                 else:
                     self.set_y_acceleration(a * math.sin(theta))
@@ -123,28 +131,53 @@ class Body(pygame.sprite.Sprite):
             except ZeroDivisionError:
                 pass
 
-body_group = pygame.sprite.Group()
-N_BODIES = 50
+class Galaxy():
+    
+    def __init__(self, diameter):
+        self.diameter = diameter
+        self.center_x = 1920 // 2
+        self.center_y = 1080 // 2
+        self.center = Body
+        self.all_bodies = pygame.sprite.Group()
+        self.list_body = list(self.all_bodies)
+        self.iterable_list = list(itertools.combinations(self.list_body, 2))
+
+    def add_body(self, n):
+        
+        self.center = Body(n / 3, 5, 0, 0, (self.center_x, self.center_y), (255, 255, 0))
+        self.all_bodies.add(self.center)
+        
+        for i in range(n):
+            x_position = random.randint(0, 1920)
+            y_position = random.randint(0, 1080)
+            distance = math.sqrt((x_position - self.center_x) ** 2 + (y_position - self.center_y) ** 2)
+            
+            while distance >= self.diameter // 2:   
+                x_position = random.randint(0, 1920)
+                y_position = random.randint(0, 1080)
+                distance = math.sqrt((x_position - self.center_x) ** 2 + (y_position - self.center_y) ** 2)
+                
+            self.all_bodies.add(Body(1, 1, 0, 0, (x_position, y_position), (255, 255, 255))) 
+        
+          
+
+N_BODIES = 1
 color_list = (((255,0,0), (255, 255, 0), (255, 255, 255), (0, 0, 255)))
-
-for i in range(N_BODIES):
-    color_body = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-    body_group.add(Body(1, 3, 0, 0, (random.randint(0, 1920), random.randint(0, 1080)), color_list[random.randint(0, 3)]))
-    
-list_body = list(body_group)
-iterable_list = list(itertools.combinations(list_body, 2))
-
-    
+ 
 def main():
     
     run = True
     pygame.init()
-    clock = pygame.time.Clock()
-    
+    galaxy = Galaxy(200)
+    galaxy.add_body(N_BODIES)
+    all_bodies = galaxy.all_bodies
+    list_body = list(all_bodies)
+    iterable_list = list(itertools.combinations(list_body, 2))
+
     while run:
         
         screen.fill("Black")
-        body_group.draw(screen)
+        galaxy.all_bodies.draw(screen)
         
         for body, other in iterable_list:
             body.gravitation_interaction(other)
