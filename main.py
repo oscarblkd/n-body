@@ -11,7 +11,7 @@ surface_screen = surface.get_rect(center=(1920 // 2, 1080 // 2))
 
 class Body(pygame.sprite.Sprite):
     
-    def __init__(self, mass, radius, x_velocity, y_velocity, start_position):
+    def __init__(self, mass, radius, x_velocity, y_velocity, start_position, color):
         
         super().__init__()
         
@@ -19,10 +19,11 @@ class Body(pygame.sprite.Sprite):
         and a position depending on the x and y """
         
         self.radius = 1
+        self.color = color
         self.image = pygame.Surface((radius, radius))
         self.image.fill("Black")
         self.rect = self.image.get_rect(center= start_position)
-        pygame.draw.circle(self.image, (255, 255, 255), (radius, radius), radius= radius)
+        pygame.draw.circle(self.image, color, (radius, radius), radius= radius)
         
         self.mass = mass
         self.x_acceleration = 0
@@ -124,10 +125,11 @@ class Body(pygame.sprite.Sprite):
 
 body_group = pygame.sprite.Group()
 N_BODIES = 50
+color_list = (((255,0,0), (255, 255, 0), (255, 255, 255), (0, 0, 255)))
 
 for i in range(N_BODIES):
-    body_group.add(Body(1, 3, 0, 0, (random.randint(0, 1920), random.randint(0, 1080))))
-body_group.add(Body(20, 10, 0, 0, ((1920 // 2, 1080 // 2))))
+    color_body = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    body_group.add(Body(1, 3, 0, 0, (random.randint(0, 1920), random.randint(0, 1080)), color_list[random.randint(0, 3)]))
     
 list_body = list(body_group)
 iterable_list = list(itertools.combinations(list_body, 2))
